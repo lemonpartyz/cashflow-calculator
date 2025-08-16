@@ -1,5 +1,90 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# # What this is
+# A lightweight, no-acronyms calculator for fast real-estate underwriting during agent/seller calls. It turns a few inputs (price, rent, down %, rate, taxes, insurance, etc.) into plain-English numbers you can speak to on the phone, plus quick “offer targets.” It can also pull area incomes by ZIP (US) and show rule-of-thumb “qualifying income” comparisons.
+#
+# # Who it’s for
+# Investors, wholesalers, and agents who need a quick reality check on cash flow, seller net, and buyer qualification—without spreadsheets or lender software.
+#
+# # What it does
+# - Shows down payment in dollars at your chosen down-payment percent.
+# - Calculates loan amount, monthly principal+interest, and total monthly housing cost (principal + interest + property tax + insurance + HOA/condo fees).
+# - Estimates monthly cash flow after simple reserves (vacancy % and maintenance % of rent).
+# - Shows a plain-language coverage ratio (income after typical expenses ÷ principal+interest) so you can see if the rent “carries” the loan.
+# - Computes income needed to qualify using a simple 28% rule (housing ≤ 28% of gross income).
+# - Gives a one-line seller net estimate (commission %, other closing % + known payoff).
+# - Produces two offer targets:
+#   - Break-even price (non-negative cash flow given your rent, rate, and reserves).
+#   - Conservative price (keeps total monthly housing ≤ X% of rent; you set X).
+# - ZIP income fetch (US): pulls median and average (computed) household income for the property’s ZCTA and compares those to your “income needed.”
+# - Rule-of-thumb qualifying income (appears right after ZIP income results):
+#   - Canada-style stress test: payment at the greater of (your rate + 2%) or 5.25%, then housing-only (~39%) and including other debts (~44%).
+#   - US-style 28/36: housing at 28%; housing+other debts at 36%.
+# - One-click Copy Summary for pasting into your CRM or notes.
+#
+# # Inputs you’ll fill
+# - Asking price; market/actual rent.
+# - Down-payment percent, interest rate (APR), loan term (years).
+# - Property taxes/year, insurance/year, HOA or condo fee/month.
+# - Vacancy % of rent, maintenance % of rent.
+# - Agent commission %, other closing costs %, seller payoff (if known).
+# - Optional “optimistic sale price” for net comparison (defaults to ask).
+# - Target % of rent for total monthly housing (for the “conservative” offer).
+# - Other monthly debts (for the qualifying-income estimates).
+# - ZIP (US) to fetch area incomes (works for most residential ZIPs).
+#
+# # Buttons
+# - Fetch incomes by ZIP: just pulls incomes (US Census ZCTA).
+# - Fetch income + Calculate: pulls incomes and immediately runs the full calculation so results include the area income and qualifying-income section.
+# - Calculate: runs the deal math without fetching incomes.
+# - Reset and Copy Summary: clear or copy the output.
+#
+# # How the math works (plain English)
+# - Monthly principal+interest: standard fixed-rate mortgage formula.
+# - Total monthly housing = principal+interest + (taxes/12) + (insurance/12) + HOA.
+# - Cash flow ≈ rent − total housing − (vacancy% × rent) − (maintenance% × rent).
+# - Coverage ratio ≈ (rent − vacancy − taxes/12 − insurance/12 − HOA − maintenance) ÷ (principal+interest).
+# - Income needed (28% rule):
+#   - monthly: total housing ÷ 0.28
+#   - annual: (total housing × 12) ÷ 0.28
+# - Seller net ≈ price − (commission% × price) − (other closing% × price) − payoff.
+# - Break-even offer target: finds the highest price such that cash flow isn’t negative at your inputs.
+# - Conservative offer target: finds the highest price where total housing ≤ (target % of rent).
+#
+# # ZIP incomes (US only)
+# - Source: U.S. Census ACS 5-year at the ZCTA level (Census’ ZIP approximation).
+# - Returns median household income and computes average as (aggregate income ÷ households).
+# - Needs internet only for the fetch; everything else runs offline.
+# - Some PO-box/business ZIPs don’t map to a ZCTA (no data).
+#
+# # Qualifying-income (rule-of-thumb) section
+# - Canada stress test: payment at max(rate+2%, 5.25%), then:
+#   - Housing-only limit (~39% of gross income).
+#   - Including other debts (~44% of gross income).
+#   - The higher of those is the binding estimate.
+# - US 28/36:
+#   - Housing-only (28%).
+#   - Including other debts (36%).
+#
+# # What it’s not
+# - Not a lender quote or legal/financial advice.
+# - Doesn’t model PMI/CMHC premiums explicitly (you can over-approximate by increasing insurance or rate).
+# - Uses simple reserves for vacancy and maintenance; real CapEx can be lumpy.
+# - Offer targets are guides, not guarantees—markets, rents, and rates move.
+#
+# # Quick start (example)
+# 1) Enter: price 500,000; rent 3,000; down 20%; rate 7%; term 30; taxes 3,600/yr; insurance 1,200/yr; HOA 0; vacancy 10%; maintenance 8%.
+# 2) (US) Type the ZIP and click Fetch income + Calculate.
+# 3) Read off: total monthly housing, cash flow, coverage ratio, income-needed, seller net, offer targets, local incomes, and qualifying-income estimates.
+#
+# # Troubleshooting
+# - ZIP fetch failed: Check it’s 5 digits and residential; try a neighboring ZIP. You can still Calculate without it.
+# - Numbers look off: Confirm annual vs monthly fields, HOA present/absent, or down-payment percent.
+# - Python/Tk error: Ensure Python 3 is installed. requests is optional; the app falls back to built-in networking.
+#
+# # Privacy
+# No data is stored. ZIP income lookups call the public Census API; all other calculations are local on your machine.
+
 """
 Realtor Call Calculator (No Acronyms) + ZIP Income + Qualifying-Income Rule of Thumb
 Author: ChatGPT (GPT-5 Thinking)
